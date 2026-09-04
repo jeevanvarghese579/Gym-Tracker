@@ -175,15 +175,16 @@ export async function deleteWorkout(userId, dateStr) {
   workoutsCache.delete(userId);
 }
 
-// Get workouts for current month - optimized to use cache
+// Get workouts for a selected month. Fetch the complete collection so month
+// navigation is not limited to the 100 records used by the detailed view.
 export async function getWorkoutsForMonth(userId, year, month) {
-  // Use cached workouts if available
-  let workouts;
-  if (workoutsCache.has(userId)) {
-    workouts = workoutsCache.get(userId);
-  } else {
-    workouts = await getWorkouts(userId);
-  }
+  const workoutsRef = collection(db, 'users', userId, 'workouts');
+  const querySnapshot = await getDocs(workoutsRef);
+  const workouts = [];
+
+  querySnapshot.forEach((workoutDoc) => {
+    workouts.push({ id: workoutDoc.id, ...workoutDoc.data() });
+  });
 
   // Date format is DD-MM-YYYY, so we filter by the month-year suffix
   // e.g., June 2026 would have dates like 01-06-2026, 15-06-2026

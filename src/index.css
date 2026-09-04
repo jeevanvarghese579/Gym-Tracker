@@ -123,6 +123,37 @@ a:hover {
   color: var(--text-secondary);
 }
 
+.btn-google {
+  width: 100%;
+  background: var(--surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  font-size: 0.95rem;
+}
+
+.btn-google:hover:not(:disabled) {
+  background: var(--background);
+  border-color: #d1d5db;
+}
+
+.google-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  color: #4285f4;
+  font-weight: 700;
+  font-family: Arial, sans-serif;
+}
+
+.auth-provider-note {
+  color: var(--text-light);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
 /* Form Elements */
 .form-group {
   display: flex;
@@ -462,6 +493,44 @@ textarea {
 
 .page-subtitle {
   color: var(--text-secondary);
+}
+
+.month-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.month-navigation .page-subtitle {
+  min-width: 9rem;
+  text-align: center;
+}
+
+.month-nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.month-nav-button:hover {
+  background: var(--success-bg);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+
+.month-nav-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* Dashboard */

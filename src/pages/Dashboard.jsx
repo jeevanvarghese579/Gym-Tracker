@@ -7,7 +7,16 @@ import {
   saveWorkout,
   formatDateForStorage
 } from '../services/firestore';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isToday, getDay } from 'date-fns';
+import {
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  getDay,
+  isToday,
+  startOfMonth,
+  subMonths
+} from 'date-fns';
 
 // Create today's date once at module level to avoid recreation on every render
 const TODAY = new Date();
@@ -25,6 +34,7 @@ function Dashboard() {
   const [editWorkout, setEditWorkout] = useState(null);
   const [editRemarks, setEditRemarks] = useState('');
   const [showEditSelector, setShowEditSelector] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(() => startOfMonth(TODAY));
 
   // Use module-level constants
   const today = TODAY;
@@ -37,7 +47,11 @@ function Dashboard() {
     try {
       const [parts, workouts, todaysWorkout] = await Promise.all([
         getBodyParts(currentUser.uid),
-        getWorkoutsForMonth(currentUser.uid, today.getFullYear(), today.getMonth()),
+        getWorkoutsForMonth(
+          currentUser.uid,
+          selectedMonth.getFullYear(),
+          selectedMonth.getMonth()
+        ),
         getWorkoutByDate(currentUser.uid, todayStr)
       ]);
 
@@ -50,7 +64,7 @@ function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [currentUser, todayStr]);
+  }, [currentUser, selectedMonth, todayStr]);
 
   useEffect(() => {
     loadDashboardData();
@@ -78,8 +92,8 @@ function Dashboard() {
   };
 
   const getActivityDays = () => {
-    const start = startOfMonth(today);
-    const end = endOfMonth(today);
+    const start = startOfMonth(selectedMonth);
+    const end = endOfMonth(selectedMonth);
     const days = eachDayOfInterval({ start, end });
     const workoutDates = getWorkoutDates();
 
@@ -128,7 +142,11 @@ function Dashboard() {
       const saved = await saveWorkout(currentUser.uid, todayStr, selectedParts, currentRemarks);
       setTodayWorkout(saved);
       // Update month workouts cache
-      const monthWorkoutsUpdated = await getWorkoutsForMonth(currentUser.uid, today.getFullYear(), today.getMonth());
+      const monthWorkoutsUpdated = await getWorkoutsForMonth(
+        currentUser.uid,
+        selectedMonth.getFullYear(),
+        selectedMonth.getMonth()
+      );
       setMonthWorkouts(monthWorkoutsUpdated);
     } catch (error) {
       console.error('Error saving workout:', error);
@@ -222,12 +240,34 @@ function Dashboard() {
     <div className="dashboard-page">
       <div className="page-header">
         <h1>Dashboard</h1>
-        <p className="page-subtitle">{format(today, 'MMMM yyyy')}</p>
+        <div className="month-navigation" aria-label="Dashboard month navigation">
+          <button
+            type="button"
+            className="month-nav-button"
+            onClick={() => setSelectedMonth((month) => subMonths(month, 1))}
+            aria-label="Show previous month"
+            title="Previous month"
+          >
+            &#8249;
+          </button>
+          <p className="page-subtitle" aria-live="polite">
+            {format(selectedMonth, 'MMMM yyyy')}
+          </p>
+          <button
+            type="button"
+            className="month-nav-button"
+            onClick={() => setSelectedMonth((month) => addMonths(month, 1))}
+            aria-label="Show next month"
+            title="Next month"
+          >
+            &#8250;
+          </button>
+        </div>
       </div>
 
       {/* Monthly Activity Grid */}
       <section className="activity-section">
-        <h2>This Month's Activity</h2>
+        <h2>{format(selectedMonth, 'MMMM')} Activity</h2>
         <div className="activity-grid">
           {activityDays.map((day) => (
             <button
@@ -254,7 +294,7 @@ function Dashboard() {
       {/* Today's Exercise */}
       <section className="today-section">
         <div className="section-header">
-          <h2>Today's Exercise</h2>
+          <h2>Today’s Exercise</h2>
           <button
             className="btn btn-add"
             onClick={() => setShowSelector(!showSelector)}

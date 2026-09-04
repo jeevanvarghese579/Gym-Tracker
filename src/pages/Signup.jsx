@@ -1,40 +1,23 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 function Signup() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { signInWithGoogle } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleGoogleSignup = async () => {
     setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      await signInWithGoogle();
       navigate('/dashboard');
     } catch (err) {
-      if (err.code === 'auth/email-already-in-use') {
-        setError('Email is already in use');
-      } else {
-        setError('Failed to create account');
+      if (err.code !== 'auth/popup-closed-by-user') {
+        setError('Google sign-up failed. Please try again.');
       }
       setLoading(false);
     }
@@ -48,49 +31,20 @@ function Signup() {
           <p>Create an account to start tracking your workouts.</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <div className="auth-form">
           {error && <div className="error-message">{error}</div>}
 
-          <div className="form-group">
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              placeholder="Enter your password"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              type="password"
-              id="confirmPassword"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              placeholder="Confirm your password"
-            />
-          </div>
-
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? 'Creating account...' : 'Sign Up'}
+          <button
+            type="button"
+            className="btn btn-google"
+            onClick={handleGoogleSignup}
+            disabled={loading}
+          >
+            <span className="google-icon" aria-hidden="true">G</span>
+            {loading ? 'Creating account...' : 'Sign up with Google'}
           </button>
-        </form>
+          <p className="auth-provider-note">Only Google accounts are supported.</p>
+        </div>
 
         <div className="auth-footer">
           <p>
