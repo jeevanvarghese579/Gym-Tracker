@@ -34,7 +34,10 @@ function Layout() {
         >
           <span className="hamburger">☰</span>
         </button>
-        <h1 className="mobile-title">Gym Tracker</h1>
+        <div className="mobile-brand">
+          <img src="/gym-tracker-favicon.png" alt="" className="brand-icon brand-icon-mobile" />
+          <h1 className="mobile-title">Gym Tracker</h1>
+        </div>
         <button className="logout-btn-mobile" onClick={handleLogout}>
           Logout
         </button>
@@ -43,7 +46,10 @@ function Layout() {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <h2>Gym Tracker</h2>
+          <div className="brand-lockup">
+            <img src="/gym-tracker-favicon.png" alt="" className="brand-icon" />
+            <h2>Gym Tracker</h2>
+          </div>
           <button
             className="close-sidebar"
             onClick={() => setSidebarOpen(false)}

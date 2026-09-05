@@ -101,6 +101,14 @@ a:hover {
   margin-bottom: 2rem;
 }
 
+.auth-logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 0.75rem;
+  border-radius: 18px;
+}
+
 .auth-header h1 {
   font-size: 1.75rem;
   color: var(--primary);
@@ -358,11 +366,18 @@ textarea {
 }
 
 .mobile-title {
-  flex: 1;
   text-align: center;
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--primary);
+}
+
+.mobile-brand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .logout-btn-mobile {
@@ -399,6 +414,25 @@ textarea {
 .sidebar-header h2 {
   font-size: 1.25rem;
   color: var(--primary);
+}
+
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex: 0 0 auto;
+}
+
+.brand-icon-mobile {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
 }
 
 .close-sidebar {

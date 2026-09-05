@@ -27,6 +27,7 @@ function Login() {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-header">
+          <img src="/gym-tracker-icon-192.png" alt="" className="auth-logo" />
           <h1>Gym Tracker</h1>
           <p>Welcome back! Log in to track your workouts.</p>
         </div>
