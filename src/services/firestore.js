@@ -15,6 +15,8 @@ import {
 import { db } from '../firebase';
 import { format } from 'date-fns';
 
+const APP_ROOT = ['apps', 'gymTracker', 'users'];
+
 const DEFAULT_BODY_PARTS = [
   'Chest',
   'Shoulder',
@@ -38,7 +40,7 @@ export async function getBodyParts(userId) {
     return bodyPartsCache.get(userId);
   }
 
-  const docRef = doc(db, 'users', userId, 'settings', 'bodyParts');
+  const docRef = doc(db, ...APP_ROOT, userId, 'settings', 'bodyParts');
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
@@ -58,7 +60,7 @@ export async function addBodyPart(userId, bodyPart) {
 
   if (!currentParts.includes(bodyPart)) {
     const newParts = [...currentParts, bodyPart];
-    const docRef = doc(db, 'users', userId, 'settings', 'bodyParts');
+    const docRef = doc(db, ...APP_ROOT, userId, 'settings', 'bodyParts');
     await setDoc(docRef, { items: newParts });
     bodyPartsCache.set(userId, newParts);
     return newParts;
@@ -73,7 +75,7 @@ export async function editBodyPart(userId, oldPart, newPart) {
 
   if (index !== -1) {
     currentParts[index] = newPart;
-    const docRef = doc(db, 'users', userId, 'settings', 'bodyParts');
+    const docRef = doc(db, ...APP_ROOT, userId, 'settings', 'bodyParts');
     await setDoc(docRef, { items: currentParts });
     bodyPartsCache.set(userId, [...currentParts]);
     return [...currentParts];
@@ -86,7 +88,7 @@ export async function deleteBodyPart(userId, bodyPart) {
   const currentParts = await getBodyParts(userId);
   const newParts = currentParts.filter(part => part !== bodyPart);
 
-  const docRef = doc(db, 'users', userId, 'settings', 'bodyParts');
+  const docRef = doc(db, ...APP_ROOT, userId, 'settings', 'bodyParts');
   await setDoc(docRef, { items: newParts });
   bodyPartsCache.set(userId, newParts);
 
@@ -100,7 +102,7 @@ export async function getWorkouts(userId, pageSize = 100) {
     return workoutsCache.get(userId);
   }
 
-  const workoutsRef = collection(db, 'users', userId, 'workouts');
+  const workoutsRef = collection(db, ...APP_ROOT, userId, 'workouts');
   // Limit to 100 most recent workouts to avoid performance issues
   // Note: orderBy on string date won't work correctly with DD-MM-YYYY format,
   // so we fetch with limit and sort in JavaScript
@@ -124,7 +126,7 @@ export async function getWorkouts(userId, pageSize = 100) {
 }
 
 export async function getWorkoutByDate(userId, dateStr) {
-  const docRef = doc(db, 'users', userId, 'workouts', dateStr);
+  const docRef = doc(db, ...APP_ROOT, userId, 'workouts', dateStr);
   const docSnap = await getDoc(docRef);
 
   if (docSnap.exists()) {
@@ -135,7 +137,7 @@ export async function getWorkoutByDate(userId, dateStr) {
 }
 
 export async function saveWorkout(userId, dateStr, selectedBodyParts, remarks = '') {
-  const docRef = doc(db, 'users', userId, 'workouts', dateStr);
+  const docRef = doc(db, ...APP_ROOT, userId, 'workouts', dateStr);
   const now = Timestamp.now();
 
   const existingWorkout = await getDoc(docRef);
@@ -169,7 +171,7 @@ export async function saveWorkout(userId, dateStr, selectedBodyParts, remarks = 
 }
 
 export async function deleteWorkout(userId, dateStr) {
-  const docRef = doc(db, 'users', userId, 'workouts', dateStr);
+  const docRef = doc(db, ...APP_ROOT, userId, 'workouts', dateStr);
   await deleteDoc(docRef);
   // Clear cache on delete
   workoutsCache.delete(userId);
@@ -178,7 +180,7 @@ export async function deleteWorkout(userId, dateStr) {
 // Get workouts for a selected month. Fetch the complete collection so month
 // navigation is not limited to the 100 records used by the detailed view.
 export async function getWorkoutsForMonth(userId, year, month) {
-  const workoutsRef = collection(db, 'users', userId, 'workouts');
+  const workoutsRef = collection(db, ...APP_ROOT, userId, 'workouts');
   const querySnapshot = await getDocs(workoutsRef);
   const workouts = [];
 

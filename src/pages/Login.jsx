@@ -17,7 +17,7 @@ function Login() {
       navigate('/dashboard');
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
-        setError('Google sign-in failed. Please try again.');
+        setError(err?.message || 'Google sign-in failed. Please try again.');
       }
       setLoading(false);
     }
