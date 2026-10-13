@@ -15,9 +15,27 @@ function isOfflineError(error) {
   ].includes(error?.code);
 }
 
+function offlineVerificationError() {
+  const error = new Error(
+    'Connect to the internet once to verify Gym Tracker access on this device.'
+  );
+  error.code = 'access/offline-verification-required';
+  return error;
+}
+
 export async function requireAppAccess(user) {
   const appId = app.options.appId;
   if (!appId) throw new Error('Firebase Access Manager is not configured.');
+
+  // Avoid waiting for a Cloud Function timeout when the browser already knows
+  // it is offline. Only a previously approved app/user pair may continue.
+  if (!navigator.onLine) {
+    const hasCachedApproval = await hasApprovedAccess(appId, user.uid)
+      .catch(() => false);
+    if (hasCachedApproval) return user;
+    throw offlineVerificationError();
+  }
+
   try {
     const result = await httpsCallable(functions, 'checkMyAccess')({ appId });
     const data = result.data && typeof result.data === 'object' ? result.data : {};
@@ -57,10 +75,6 @@ export async function requireAppAccess(user) {
       return user;
     }
 
-    const offlineError = new Error(
-      'Connect to the internet once to verify Gym Tracker access on this device.'
-    );
-    offlineError.code = 'access/offline-verification-required';
-    throw offlineError;
+    throw offlineVerificationError();
   }
 }

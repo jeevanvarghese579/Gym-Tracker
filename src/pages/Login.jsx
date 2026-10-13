@@ -1,12 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signInWithGoogle } = useAuth();
+  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
+  const { signInWithGoogle, accessError } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const updateConnectionStatus = () => setIsOffline(!navigator.onLine);
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+    return () => {
+      window.removeEventListener('online', updateConnectionStatus);
+      window.removeEventListener('offline', updateConnectionStatus);
+    };
+  }, []);
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -33,16 +44,31 @@ function Login() {
         </div>
 
         <div className="auth-form">
-          {error && <div className="error-message">{error}</div>}
+          {(error || accessError) && (
+            <div className="error-message">
+              {error || accessError.message}
+            </div>
+          )}
+
+          {isOffline && !accessError && (
+            <div className="error-message">
+              Offline access is available after one successful online sign-in
+              on this device.
+            </div>
+          )}
 
           <button
             type="button"
             className="btn btn-google"
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={loading || isOffline}
           >
             <span className="google-icon" aria-hidden="true">G</span>
-            {loading ? 'Signing in...' : 'Continue with Google'}
+            {loading
+              ? 'Signing in...'
+              : isOffline
+                ? 'Go online to sign in'
+                : 'Continue with Google'}
           </button>
           <p className="auth-provider-note">Only Google accounts are supported.</p>
         </div>
