@@ -7,10 +7,7 @@ import {
   deleteDoc,
   Timestamp,
   query,
-  where,
-  limit,
-  startAfter,
-  orderBy
+  limit
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { format } from 'date-fns';
@@ -140,8 +137,6 @@ export async function saveWorkout(userId, dateStr, selectedBodyParts, remarks = 
   const docRef = doc(db, ...APP_ROOT, userId, 'workouts', dateStr);
   const now = Timestamp.now();
 
-  const existingWorkout = await getDoc(docRef);
-
   const workoutData = {
     date: dateStr,
     selectedBodyParts,
@@ -149,16 +144,15 @@ export async function saveWorkout(userId, dateStr, selectedBodyParts, remarks = 
     updatedAt: now
   };
 
-  if (!existingWorkout.exists()) {
-    workoutData.createdAt = now;
-  }
-
   if (selectedBodyParts.length === 0) {
     await deleteDoc(docRef);
     // Clear cache on delete
     workoutsCache.delete(userId);
     return null;
   } else {
+    // Avoid a read-before-write here. Besides adding latency, concurrent clicks
+    // could both read the same old value and then overwrite each other. Firestore
+    // queues these writes in call order, including while offline.
     await setDoc(docRef, workoutData, { merge: true });
     // Clear cache on save to ensure fresh data
     workoutsCache.delete(userId);

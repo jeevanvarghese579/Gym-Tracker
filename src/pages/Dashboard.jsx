@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import {
   getBodyParts,
@@ -35,6 +35,8 @@ function Dashboard() {
   const [editRemarks, setEditRemarks] = useState('');
   const [showEditSelector, setShowEditSelector] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(() => startOfMonth(TODAY));
+  const todayWorkoutRef = useRef(null);
+  const editWorkoutRef = useRef(null);
 
   // Use module-level constants
   const today = TODAY;
@@ -58,6 +60,7 @@ function Dashboard() {
       setBodyParts(parts);
       setMonthWorkouts(workouts);
       setTodayWorkout(todaysWorkout);
+      todayWorkoutRef.current = todaysWorkout;
       setRemarks(todaysWorkout?.remarks || '');
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -111,7 +114,7 @@ function Dashboard() {
   };
 
   const handleAddExercise = async (bodyPart) => {
-    const currentParts = todayWorkout?.selectedBodyParts || [];
+    const currentParts = todayWorkoutRef.current?.selectedBodyParts || [];
     if (currentParts.includes(bodyPart)) return;
 
     const newParts = [...currentParts, bodyPart];
@@ -119,7 +122,7 @@ function Dashboard() {
   };
 
   const handleRemoveExercise = async (bodyPart) => {
-    const currentParts = todayWorkout?.selectedBodyParts || [];
+    const currentParts = todayWorkoutRef.current?.selectedBodyParts || [];
     const newParts = currentParts.filter((p) => p !== bodyPart);
 
     if (newParts.length === 0) {
@@ -130,24 +133,36 @@ function Dashboard() {
   };
 
   const handleSaveRemarks = async () => {
-    const currentParts = todayWorkout?.selectedBodyParts || [];
+    const currentParts = todayWorkoutRef.current?.selectedBodyParts || [];
     await saveTodayWorkout(currentParts, remarks);
   };
 
   const saveTodayWorkout = async (selectedParts, currentRemarks) => {
     if (!currentUser) return;
 
+    const optimisticWorkout = selectedParts.length > 0 ? {
+      ...(todayWorkoutRef.current || {}),
+      id: todayStr,
+      date: todayStr,
+      selectedBodyParts: selectedParts,
+      remarks: currentRemarks
+    } : null;
+
+    // Update the ref synchronously so a second rapid click sees the first click,
+    // even before React has rendered or Firestore has acknowledged the write.
+    todayWorkoutRef.current = optimisticWorkout;
+    setTodayWorkout(optimisticWorkout);
+    setMonthWorkouts((workouts) => {
+      const withoutToday = workouts.filter((workout) => workout.date !== todayStr);
+      return optimisticWorkout ? [...withoutToday, optimisticWorkout] : withoutToday;
+    });
+
     setSaving(true);
     try {
-      const saved = await saveWorkout(currentUser.uid, todayStr, selectedParts, currentRemarks);
-      setTodayWorkout(saved);
-      // Update month workouts cache
-      const monthWorkoutsUpdated = await getWorkoutsForMonth(
-        currentUser.uid,
-        selectedMonth.getFullYear(),
-        selectedMonth.getMonth()
-      );
-      setMonthWorkouts(monthWorkoutsUpdated);
+      // Do not await the server acknowledgement. The SDK has already queued the
+      // write in IndexedDB, and its promise intentionally remains pending offline.
+      saveWorkout(currentUser.uid, todayStr, selectedParts, currentRemarks)
+        .catch((error) => console.error('Error syncing workout:', error));
     } catch (error) {
       console.error('Error saving workout:', error);
     } finally {
@@ -162,6 +177,7 @@ function Dashboard() {
     const workout = await getWorkoutByDate(currentUser.uid, day.dateStr);
     setEditingDay(day);
     setEditWorkout(workout);
+    editWorkoutRef.current = workout;
     setEditRemarks(workout?.remarks || '');
     setShowEditSelector(false);
   };
@@ -169,6 +185,7 @@ function Dashboard() {
   const handleCloseEditModal = () => {
     setEditingDay(null);
     setEditWorkout(null);
+    editWorkoutRef.current = null;
     setEditRemarks('');
     setShowEditSelector(false);
     // Refresh data
@@ -178,7 +195,7 @@ function Dashboard() {
   const handleAddExerciseToEditDay = async (bodyPart) => {
     if (!currentUser || !editingDay) return;
 
-    const currentParts = editWorkout?.selectedBodyParts || [];
+    const currentParts = editWorkoutRef.current?.selectedBodyParts || [];
     if (currentParts.includes(bodyPart)) return;
 
     const newParts = [...currentParts, bodyPart];
@@ -188,7 +205,7 @@ function Dashboard() {
   const handleRemoveExerciseFromEditDay = async (bodyPart) => {
     if (!currentUser || !editingDay) return;
 
-    const currentParts = editWorkout?.selectedBodyParts || [];
+    const currentParts = editWorkoutRef.current?.selectedBodyParts || [];
     const newParts = currentParts.filter((p) => p !== bodyPart);
     await saveEditDayWorkout(newParts, editRemarks);
   };
@@ -196,21 +213,33 @@ function Dashboard() {
   const handleSaveEditRemarks = async () => {
     if (!currentUser || !editingDay) return;
 
-    const currentParts = editWorkout?.selectedBodyParts || [];
+    const currentParts = editWorkoutRef.current?.selectedBodyParts || [];
     await saveEditDayWorkout(currentParts, editRemarks);
   };
 
   const saveEditDayWorkout = async (selectedParts, currentRemarks) => {
     if (!currentUser || !editingDay) return;
 
+    const optimisticWorkout = selectedParts.length > 0 ? {
+      ...(editWorkoutRef.current || {}),
+      id: editingDay.dateStr,
+      date: editingDay.dateStr,
+      selectedBodyParts: selectedParts,
+      remarks: currentRemarks
+    } : null;
+
+    editWorkoutRef.current = optimisticWorkout;
+    setEditWorkout(optimisticWorkout);
+
     setSaving(true);
     try {
-      const saved = await saveWorkout(currentUser.uid, editingDay.dateStr, selectedParts, currentRemarks);
-      setEditWorkout(saved);
+      saveWorkout(currentUser.uid, editingDay.dateStr, selectedParts, currentRemarks)
+        .catch((error) => console.error('Error syncing workout:', error));
 
       // Update today's workout if editing today
       if (editingDay.dateStr === todayStr) {
-        setTodayWorkout(saved);
+        todayWorkoutRef.current = optimisticWorkout;
+        setTodayWorkout(optimisticWorkout);
         setRemarks(currentRemarks);
       }
     } catch (error) {

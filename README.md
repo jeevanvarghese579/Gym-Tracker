@@ -4,15 +4,15 @@ A modern gym tracking web application built with React, Vite, and Firebase.
 
 ## Features
 
-- Firebase Authentication (Email/Password)
-- Firestore Database for user data
+- Firebase Authentication (Google)
+- Firestore data cached in IndexedDB for offline access and queued writes
 - Monthly activity view on dashboard
 - Track daily workouts and exercises
 - View previous 7 days of workouts
 - Detailed view with pagination
 - Customizable body parts/exercises
 - Responsive design (mobile and desktop)
-- Real-time data sync
+- Optimistic exercise selection with background sync
 
 ## Tech Stack
 
@@ -50,14 +50,13 @@ src/
 ## Firestore Data Structure
 
 ```
-users/{uid}/
+/apps/gymTracker/users/{uid}/
 ├── settings/
 │   └── bodyParts           # User's custom body parts/exercises
 └── workouts/{date}         # date in DD-MM-YYYY format
     ├── date
     ├── selectedBodyParts[]
     ├── remarks
-    ├── createdAt
     └── updatedAt
 ```
 
@@ -69,43 +68,11 @@ users/{uid}/
 npm install
 ```
 
-### 2. Configure Firebase
+### 2. Firebase configuration
 
-1. Create a Firebase project at [https://console.firebase.google.com](https://console.firebase.google.com)
-2. Enable Authentication:
-   - Go to Authentication > Sign-in method
-   - Enable Email/Password provider
-3. Create Firestore Database:
-   - Go to Firestore Database
-   - Create database (start in test mode)
-   - Deploy security rules from `firestore.rules`
-4. Get your Firebase config:
-   - Go to Project Settings > General
-   - Scroll to "Your apps" > Web app
-   - Copy the config values
-
-5. Update `src/firebase.js` with your Firebase config:
-
-```javascript
-const firebaseConfig = {
-  apiKey: "YOUR_ACTUAL_API_KEY",
-  authDomain: "YOUR_ACTUAL_AUTH_DOMAIN.firebaseapp.com",
-  projectId: "YOUR_ACTUAL_PROJECT_ID",
-  storageBucket: "YOUR_ACTUAL_STORAGE_BUCKET.appspot.com",
-  messagingSenderId: "YOUR_ACTUAL_MESSAGING_SENDER_ID",
-  appId: "YOUR_ACTUAL_APP_ID"
-};
-```
-
-6. Update `.firebaserc` with your project ID:
-
-```json
-{
-  "projects": {
-    "default": "YOUR_ACTUAL_PROJECT_ID"
-  }
-}
-```
+This is an existing app in the shared `inter-level-progress-manager` Firebase
+project. Preserve the Firebase configuration in `src/firebase.js`, the fixed
+app namespace, and Access Manager integration.
 
 ### 3. Development
 
@@ -130,11 +97,8 @@ npm install -g firebase-tools
 # Login to Firebase
 firebase login
 
-# Initialize Firebase Hosting (if not already done)
-firebase init hosting
-
-# Deploy to Firebase
-firebase deploy
+# Deploy only this app's Hosting site
+firebase deploy --only hosting:jeevansgymtracker
 ```
 
 ## Default Body Parts
@@ -152,15 +116,25 @@ The app comes with these default body parts:
 
 Users can customize this list in Settings.
 
-## Security Rules
+## Shared Firebase project safety
 
-Firebase security rules ensure users can only access their own data:
+This is an existing isolated app.
 
-```
-users/{userId} - Only authenticated users can read/write their own data
-users/{userId}/settings/{document} - Users can only access their own settings
-users/{userId}/workouts/{document} - Users can only access their own workouts
-```
+- Canonical appKey: `gymTracker`
+- Firebase Web App ID: `1:379503088311:web:f430dcb999873898133332`
+- Hosting site: `jeevansgymtracker`
+- Firestore scope: `/apps/gymTracker/users/{uid}/...`
+
+The authoritative Firestore and Storage rules live only in
+[school-softwares-firebase-shared-config](https://github.com/jeevanvarghese579/school-softwares-firebase-shared-config).
+Do not create or deploy rules from this repository, and do not run an unscoped
+Firebase deploy. Access must also be approved through Firebase Access Manager
+for the fixed Web App ID above.
+
+Preserve these identifiers and existing Firestore paths. Do not create a new
+namespace or migrate data unless explicitly requested. Any necessary permission
+change must be the smallest possible update in the canonical shared-rules
+repository and must pass every existing app rule test before deployment.
 
 ## License
 
